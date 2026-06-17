@@ -12,6 +12,17 @@ function authenticateApiKey(req, res, next) {
   next();
 }
 
+const CHANNEL_MAP = {
+  'Events': 698,
+  'Events/Referral & Ambassadors': 976,
+  'Referral & Ambassadors': 6
+};
+
+const PORTFOLIO_MAP = {
+  'Digital Sales': 725,
+  'Strategic': 726
+};
+
 app.get('/', (req, res) => {
   res.json({ status: 'ok' });
 });
@@ -25,6 +36,9 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
   const TOKEN = process.env.PIPEDRIVE_TOKEN;
   const BASE = 'https://api.pipedrive.com/v1';
+
+  const channelId = CHANNEL_MAP[origem] || null;
+  const portfolioId = PORTFOLIO_MAP[portfolio] || null;
 
   try {
     // Passo 1: criar Organization
@@ -58,14 +72,17 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
     const personId = personResp.data.data.id;
 
     // Passo 3: criar Deal
-    const dealResp = await axios.post(`${BASE}/deals?api_token=${TOKEN}`, {
+    const dealPayload = {
       title: `${nome} - ${evento || ''}`,
       person_id: personId,
       org_id: orgId || null,
       pipeline_id: 62,
       stage_id: 583,
-      channel: origem || ''
-    });
+      'c30b6329c9a5cb3f8b1e244196cb43af0470f6e0': portfolioId
+    };
+    if (channelId) dealPayload.channel = channelId;
+
+    const dealResp = await axios.post(`${BASE}/deals?api_token=${TOKEN}`, dealPayload);
 
     if (!dealResp.data.success) {
       console.log('Erro ao criar deal:', dealResp.data);
@@ -76,7 +93,7 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
     // Passo 4: criar Note
     const noteResp = await axios.post(`${BASE}/notes?api_token=${TOKEN}`, {
-      content: `Portfólio: ${portfolio || ''}\nTime destino: ${timeDestino || ''}\nObservação: ${observacao || ''}`,
+      content: `Time destino: ${timeDestino || ''}\nObservação: ${observacao || ''}`,
       deal_id: dealId
     });
 
