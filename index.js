@@ -36,7 +36,6 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
   const TOKEN = process.env.PIPEDRIVE_TOKEN;
   const BASE = 'https://api.pipedrive.com/v1';
-
   const channelId = CHANNEL_MAP[origem] || null;
   const portfolioId = PORTFOLIO_MAP[portfolio] || null;
 
@@ -93,7 +92,7 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
     // Passo 4: criar Note
     const noteResp = await axios.post(`${BASE}/notes?api_token=${TOKEN}`, {
-      content: `Time destino: ${timeDestino || ''}\nObservação: ${observacao || ''}`,
+      content: `<b>Time destino:</b> ${timeDestino || ''}<br><b>Observação:</b> ${observacao || ''}`,
       deal_id: dealId
     });
 
