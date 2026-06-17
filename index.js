@@ -27,13 +27,28 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
   const BASE = 'https://api.pipedrive.com/v1';
 
   try {
-    // Passo 1: criar Person
-    const personResp = await axios.post(`${BASE}/persons?api_token=${TOKEN}`, {
+    // Passo 1: criar Organization
+    let orgId = null;
+    if (empresa) {
+      const orgResp = await axios.post(`${BASE}/organizations?api_token=${TOKEN}`, {
+        name: empresa
+      });
+      if (orgResp.data.success) {
+        orgId = orgResp.data.data.id;
+      } else {
+        console.log('Erro ao criar organização:', orgResp.data);
+      }
+    }
+
+    // Passo 2: criar Person
+    const personPayload = {
       name: nome,
       email: [{ value: email || '', primary: true, label: 'work' }],
-      phone: [{ value: telefone, primary: true, label: 'mobile' }],
-      org_name: empresa || ''
-    });
+      phone: [{ value: telefone, primary: true, label: 'mobile' }]
+    };
+    if (orgId) personPayload.org_id = orgId;
+
+    const personResp = await axios.post(`${BASE}/persons?api_token=${TOKEN}`, personPayload);
 
     if (!personResp.data.success) {
       console.log('Erro ao criar pessoa:', personResp.data);
@@ -42,10 +57,11 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
     const personId = personResp.data.data.id;
 
-    // Passo 2: criar Deal
+    // Passo 3: criar Deal
     const dealResp = await axios.post(`${BASE}/deals?api_token=${TOKEN}`, {
       title: `${nome} - ${evento || ''}`,
       person_id: personId,
+      org_id: orgId || null,
       pipeline_id: 62,
       stage_id: 583,
       channel: origem || ''
@@ -58,7 +74,7 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
     const dealId = dealResp.data.data.id;
 
-    // Passo 3: criar Note
+    // Passo 4: criar Note
     const noteResp = await axios.post(`${BASE}/notes?api_token=${TOKEN}`, {
       content: `Portfólio: ${portfolio || ''}\nTime destino: ${timeDestino || ''}\nObservação: ${observacao || ''}`,
       deal_id: dealId
@@ -68,7 +84,7 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
       console.log('Erro ao criar nota:', noteResp.data);
     }
 
-    return res.json({ success: true, deal_id: dealId, person_id: personId });
+    return res.json({ success: true, deal_id: dealId, person_id: personId, org_id: orgId });
 
   } catch (error) {
     console.log('Erro detalhado:', error.response?.data || error.message);
