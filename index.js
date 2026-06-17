@@ -36,7 +36,8 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
     });
 
     if (!personResp.data.success) {
-      return res.status(500).json({ success: false, error: 'Erro ao criar pessoa no Pipedrive' });
+      console.log('Erro ao criar pessoa:', personResp.data);
+      return res.status(500).json({ success: false, error: 'Erro ao criar pessoa no Pipedrive', detail: personResp.data });
     }
 
     const personId = personResp.data.data.id;
@@ -51,21 +52,31 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
     });
 
     if (!dealResp.data.success) {
-      return res.status(500).json({ success: false, error: 'Erro ao criar deal no Pipedrive' });
+      console.log('Erro ao criar deal:', dealResp.data);
+      return res.status(500).json({ success: false, error: 'Erro ao criar deal no Pipedrive', detail: dealResp.data });
     }
 
     const dealId = dealResp.data.data.id;
 
     // Passo 3: criar Note
-    await axios.post(`${BASE}/notes?api_token=${TOKEN}`, {
+    const noteResp = await axios.post(`${BASE}/notes?api_token=${TOKEN}`, {
       content: `Portfólio: ${portfolio || ''}\nTime destino: ${timeDestino || ''}\nObservação: ${observacao || ''}`,
       deal_id: dealId
     });
 
+    if (!noteResp.data.success) {
+      console.log('Erro ao criar nota:', noteResp.data);
+    }
+
     return res.json({ success: true, deal_id: dealId, person_id: personId });
 
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    console.log('Erro detalhado:', error.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      detail: error.response?.data || null
+    });
   }
 });
 
