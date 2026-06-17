@@ -23,6 +23,10 @@ const PORTFOLIO_MAP = {
   'Strategic': 726
 };
 
+const EVENTO_MAP = {
+  'ABRAINC': 1010
+};
+
 app.get('/', (req, res) => {
   res.json({ status: 'ok' });
 });
@@ -38,6 +42,7 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
   const BASE = 'https://api.pipedrive.com/v1';
   const channelId = CHANNEL_MAP[origem] || null;
   const portfolioId = PORTFOLIO_MAP[portfolio] || null;
+  const eventoId = EVENTO_MAP[evento] || null;
 
   try {
     // Passo 1: criar Organization
@@ -72,12 +77,13 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
     // Passo 3: criar Deal
     const dealPayload = {
-      title: `${nome} - ${evento || ''}`,
+      title: `${empresa || nome}`,
       person_id: personId,
       org_id: orgId || null,
       pipeline_id: 62,
       stage_id: 583,
-      'c30b6329c9a5cb3f8b1e244196cb43af0470f6e0': portfolioId
+      'c30b6329c9a5cb3f8b1e244196cb43af0470f6e0': portfolioId,
+      'f563ad035a06aaa1ccf4042322d37a62c3a179d3': eventoId
     };
     if (channelId) dealPayload.channel = channelId;
 
