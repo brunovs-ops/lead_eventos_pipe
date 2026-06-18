@@ -5,8 +5,7 @@ const app = express();
 app.use(express.json());
 
 function authenticateApiKey(req, res, next) {
-  const apiKey = req.body.apiKey;
-
+  const apiKey = req.headers['x-api-key'];
   if (!apiKey || apiKey.trim() !== process.env.BOT_API_KEY?.trim()) {
     return res.status(403).json({ success: false, error: 'API Key inválida' });
   }
