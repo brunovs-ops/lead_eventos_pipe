@@ -5,10 +5,7 @@ const app = express();
 app.use(express.json());
 
 function authenticateApiKey(req, res, next) {
-  const apiKey = req.headers['x-api-key'];
-  console.log('API Key recebida:', JSON.stringify(apiKey));
-  console.log('BOT_API_KEY esperada:', JSON.stringify(process.env.BOT_API_KEY));
-  console.log('São iguais:', apiKey === process.env.BOT_API_KEY);
+  const apiKey = req.body.apiKey;
 
   if (!apiKey || apiKey.trim() !== process.env.BOT_API_KEY?.trim()) {
     return res.status(403).json({ success: false, error: 'API Key inválida' });
@@ -93,12 +90,9 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
   const useCaseId = USE_CASE_MAP[useCase] || null;
 
   try {
-    // Passo 1: criar Organization
     let orgId = null;
     if (empresa) {
-      const orgResp = await axios.post(`${BASE}/organizations?api_token=${TOKEN}`, {
-        name: empresa
-      });
+      const orgResp = await axios.post(`${BASE}/organizations?api_token=${TOKEN}`, { name: empresa });
       if (orgResp.data.success) {
         orgId = orgResp.data.data.id;
       } else {
@@ -106,7 +100,6 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
       }
     }
 
-    // Passo 2: criar Person
     const personPayload = {
       name: nome,
       email: [{ value: email || '', primary: true, label: 'work' }],
@@ -115,7 +108,6 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
     if (orgId) personPayload.org_id = orgId;
 
     const personResp = await axios.post(`${BASE}/persons?api_token=${TOKEN}`, personPayload);
-
     if (!personResp.data.success) {
       console.log('Erro ao criar pessoa:', personResp.data);
       return res.status(500).json({ success: false, error: 'Erro ao criar pessoa no Pipedrive', detail: personResp.data });
@@ -123,7 +115,6 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
     const personId = personResp.data.data.id;
 
-    // Passo 3: criar Deal
     const dealPayload = {
       title: `${empresa || nome}`,
       person_id: personId,
@@ -140,7 +131,6 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
     if (channelId) dealPayload.channel = channelId;
 
     const dealResp = await axios.post(`${BASE}/deals?api_token=${TOKEN}`, dealPayload);
-
     if (!dealResp.data.success) {
       console.log('Erro ao criar deal:', dealResp.data);
       return res.status(500).json({ success: false, error: 'Erro ao criar deal no Pipedrive', detail: dealResp.data });
@@ -148,7 +138,6 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
     const dealId = dealResp.data.data.id;
 
-    // Passo 4: criar Note
     const noteResp = await axios.post(`${BASE}/notes?api_token=${TOKEN}`, {
       content: `Time destino: ${timeDestino || ''}\nObservação: ${observacao || ''}`,
       deal_id: dealId
@@ -162,11 +151,7 @@ app.post('/criar-lead-pipedrive', authenticateApiKey, async (req, res) => {
 
   } catch (error) {
     console.log('Erro detalhado:', error.response?.data || error.message);
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-      detail: error.response?.data || null
-    });
+    return res.status(500).json({ success: false, error: error.message, detail: error.response?.data || null });
   }
 });
 
