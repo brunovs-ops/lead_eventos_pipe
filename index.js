@@ -6,6 +6,10 @@ app.use(express.json());
 
 function authenticateApiKey(req, res, next) {
   const apiKey = req.headers['x-api-key'];
+  console.log('API Key recebida:', JSON.stringify(apiKey));
+  console.log('BOT_API_KEY esperada:', JSON.stringify(process.env.BOT_API_KEY));
+  console.log('São iguais:', apiKey === process.env.BOT_API_KEY);
+
   if (!apiKey || apiKey.trim() !== process.env.BOT_API_KEY?.trim()) {
     return res.status(403).json({ success: false, error: 'API Key inválida' });
   }
